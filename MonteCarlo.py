@@ -1,4 +1,6 @@
 import random
+import matplotlib
+import matplotlib.pyplot as plt
 
 def rollDice():
     roll = random.randint(1,100)
@@ -17,17 +19,31 @@ def simpleBetter(funds, initial_wager, wager_count):
     value = funds
     wager = initial_wager
 
-    current_wager = 0
+    wX = []
+    vY = []
 
-    while current_wager < wager_count:
+    current_wager = 1
+
+    while current_wager <= wager_count:
         if rollDice():
             value += wager
         else:
             value -= wager
+
+        wX.append(current_wager)
+        vY.append(value)
         current_wager += 1
-    print 'Funds: ', value
+
+    if value < 0:
+        value = "broke"
+    # print 'Funds: ', value
+    plt.plot(wX, vY)
 
 x = 0
 while x < 100:
-    simpleBetter(10000, 100, 100)
+    simpleBetter(10000, 100, 10000)
     x += 1
+
+plt.ylabel('Account Value')
+plt.xlabel('Wager Count')
+plt.show()
