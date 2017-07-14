@@ -4,9 +4,15 @@ import matplotlib.pyplot as plt
 import time
 
 sample_size = 1000
+
 starting_funds = 10000
 wager_size = 100
-wager_count = 10000
+wager_count = 100
+
+simple_busts = 0.0
+doubler_busts = 0.0
+simple_profits = 0.0
+doubler_profits = 0.0
 
 def rollDice():
     roll = random.randint(1,100)
@@ -22,7 +28,8 @@ def rollDice():
         return True
 
 def simpleBetter(funds, initial_wager, wager_count, color):
-    global broke_count
+    global simple_busts
+    global simple_profits
     value = funds
     wager = initial_wager
 
@@ -42,14 +49,17 @@ def simpleBetter(funds, initial_wager, wager_count, color):
         current_wager += 1
 
     if value < 0:
-        value = "broke"
-        broke_count += 1
+        value = 0
+        simple_busts += 1
     # print 'Funds: ', value
     plt.plot(wX, vY, color) # k is black in matplotlib
 
+    if value > funds:
+        simple_profits += 1
 
 def doublerBetter(funds, initial_wager, wager_count, color):
-    global broke_count
+    global doubler_busts
+    global doubler_profits
     value = funds
     wager = initial_wager
 
@@ -77,7 +87,7 @@ def doublerBetter(funds, initial_wager, wager_count, color):
                 vY.append(value)
                 if value < 0:
                     # print 'We went broke after', current_wager, ' bets'
-                    broke_count += 1
+                    doubler_busts += 1
                     break
         elif previous_wager == 'loss':
             # print 'we lost the last one, so we will be smart and double'
@@ -103,8 +113,9 @@ def doublerBetter(funds, initial_wager, wager_count, color):
                 wX.append(current_wager)
                 vY.append(value)
                 if value <= 0:
+                    value = 0
                     # print 'We went broke after ', current_wager, 'bets'
-                    broke_count += 1
+                    doubler_busts += 1
                     break
                 # print value
                 previous_wager = 'loss'
@@ -113,6 +124,9 @@ def doublerBetter(funds, initial_wager, wager_count, color):
 
     # print value
     plt.plot(wX, vY, color)
+    if value > funds:
+        doubler_profits += 1
+
 
 xx = 0
 broke_count = 0
@@ -128,13 +142,17 @@ broke_count = 0
 # plt.show()
 x = 0
 while x < sample_size:
-    # simpleBetter(starting_funds, wager_size, wager_count, 'k')
+    simpleBetter(starting_funds, wager_size, wager_count, 'k')
     doublerBetter(starting_funds, wager_size, wager_count, 'c')
     x += 1
 
-# print "death rate: ", broke_count/float(x) * 100
-# print "survival rate: ", 100 - (broke_count/float(x) * 100)
+print 'Simple Better bust chance: ', (simple_busts/sample_size) * 100.0
+print 'Doubler Better bust chance: ', (doubler_busts/sample_size) * 100.0
 
+print 'Simple Better profit chances: ', (simple_profits/sample_size) * 100.0
+print 'Doubler Better profit chances: ', (doubler_profits/sample_size) * 100.0
+
+plt.axhline(0, color='r')
 plt.ylabel('Account Value')
 plt.xlabel('Wager Count')
 plt.show()
