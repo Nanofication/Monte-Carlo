@@ -3,16 +3,31 @@ import matplotlib
 import matplotlib.pyplot as plt
 import time
 
+simple_busts = 0.0
+doubler_busts = 0.0
+
+multiple_busts = 0.0
+multiple_profits = 0.0
+
+lower_bust = 31.235
+
+higher_profit = 63.208
+
 sample_size = 1000
 
 starting_funds = 10000
 wager_size = 100
 wager_count = 100
 
-simple_busts = 0.0
-doubler_busts = 0.0
+
 simple_profits = 0.0
 doubler_profits = 0.0
+
+da_busts = 0.0
+da_profits = 0.0
+
+random_multiple = random.uniform(0.1, 10.0)
+
 
 def rollDice():
     roll = random.randint(1,100)
@@ -26,6 +41,65 @@ def rollDice():
     elif 100 > roll > 50:
         # print roll, 'roll was 51 - 99. You win! *Pretty lights flash* Play more!'
         return True
+
+def dAlembert(funds, initial_wager, wager_count):
+    global da_busts
+    global da_profits
+
+    value = funds
+    wager = initial_wager
+    current_wager = 1
+    previous_wager = 'win'
+    previous_wager_amount = initial_wager
+
+    while current_wager <= wager_count:
+        if previous_wager == 'win':
+            if wager == initial_wager:
+                pass
+            else:
+                wager -= initial_wager
+
+            # print 'current wage:', wager, 'value', value
+
+            if rollDice():
+                value += wager
+                # print 'We won, current value', value
+                previous_wager_amount = wager
+            else:
+                value -= wager
+                previous_wager = 'loss'
+                # print 'We lost, current value', value
+                previous_wager_amount = wager
+
+                if value <= 0:
+                    da_busts += 1
+                    break
+        elif previous_wager == 'loss':
+            wager = previous_wager_amount + initial_wager
+            if (value - wager) <= 0:
+                wager = value
+
+            # print "Lost the last wager, current wager:", wager, 'value', value
+
+            if rollDice():
+                value += wager
+                # print "We won current value: ", value
+                previous_wager_amount = wager
+                previous_wager = 'win'
+            else:
+                value -= wager
+                # print "We lost, current value:", value
+                previous_wager_amount = wager
+
+                if value <= 0:
+                    da_busts += 1
+                    break
+        current_wager += 1
+
+    if value > funds:
+        da_profits += 1
+
+
 
 def simpleBetter(funds, initial_wager, wager_count, color):
     global simple_busts
@@ -127,6 +201,76 @@ def doublerBetter(funds, initial_wager, wager_count, color):
     if value > funds:
         doubler_profits += 1
 
+def multipleBetter(funds, initial_wager, wager_count):
+    global multiple_busts
+    global multiple_profits
+
+    value = funds
+    wager = initial_wager
+    wX = []
+    vY = []
+
+    current_wager = 1
+    previous_wager = 'win'
+    previous_wager_amount = initial_wager
+
+    while current_wager <= wager_count:
+        if previous_wager == 'win':
+            # print 'we won the last wager, great'
+            if rollDice():
+                value += wager
+                # print value
+                wX.append(current_wager)
+                vY.append(value)
+            else:
+                value -= wager
+                previous_wager = 'loss'
+                # print value
+                previous_wager_amount = wager
+                wX.append(current_wager)
+                vY.append(value)
+                if value < 0:
+                    # print 'We went broke after', current_wager, ' bets'
+                    multiple_busts += 1
+                    break
+        elif previous_wager == 'loss':
+            # print 'we lost the last one, so we will be smart and double'
+            if rollDice():
+                wager = previous_wager_amount * random_multiple
+
+                if (value - wager) < 0:
+                    wager = value
+                # print 'we won', wager
+                value += wager
+                # print value
+                wager = initial_wager
+                previous_wager = 'win'
+                wX.append(current_wager)
+                vY.append(value)
+            else:
+                wager = previous_wager_amount * random_multiple
+                # print 'we lost', wager
+                if (value - wager) < 0:
+                    wager = value
+                value -= wager
+                previous_wager_amount = wager
+                wX.append(current_wager)
+                vY.append(value)
+                if value <= 0:
+                    value = 0
+                    # print 'We went broke after ', current_wager, 'bets'
+                    multiple_busts += 1
+                    break
+                # print value
+                previous_wager = 'loss'
+
+        current_wager += 1
+
+    # print value
+    # plt.plot(wX, vY, color)
+    if value > funds:
+        multiple_profits += 1
+
 
 xx = 0
 broke_count = 0
@@ -140,19 +284,42 @@ broke_count = 0
 #
 # plt.axhline(0, color = 'r')
 # plt.show()
+
+
+dAlembert(starting_funds, wager_size, wager_count)
+
+"""
 x = 0
-while x < sample_size:
-    simpleBetter(starting_funds, wager_size, wager_count, 'k')
-    doublerBetter(starting_funds, wager_size, wager_count, 'c')
-    x += 1
 
-print 'Simple Better bust chance: ', (simple_busts/sample_size) * 100.0
-print 'Doubler Better bust chance: ', (doubler_busts/sample_size) * 100.0
+while True:
+    multiple_busts = 0.0
+    multiple_profits = 0.0
 
-print 'Simple Better profit chances: ', (simple_profits/sample_size) * 100.0
-print 'Doubler Better profit chances: ', (doubler_profits/sample_size) * 100.0
+    multiple_sample_sizes = 100000
+    current_sample = 1
 
-plt.axhline(0, color='r')
-plt.ylabel('Account Value')
-plt.xlabel('Wager Count')
-plt.show()
+    random_multiple = random.uniform(0.1, 10.0)
+
+    while current_sample <= multiple_sample_sizes:
+        multipleBetter(starting_funds, wager_size, wager_count)
+        current_sample += 1
+
+    if ((multiple_busts/multiple_sample_sizes) * 100.0 < lower_bust) and \
+        ((multiple_profits/multiple_sample_sizes) * 100.0 > higher_profit):
+        print '##################################'
+        print "Found a winner, the multiple was: ", random_multiple
+        print "Lower bust to beat",lower_bust
+        print 'Higher profit rate to beat', higher_profit
+        print "Bust rate:",(multiple_busts/multiple_sample_sizes)*100.0
+        print "Profit rate:",(multiple_profits/multiple_sample_sizes) * 100.0
+        print '##################################'
+    # else:
+    #     print '##################################'
+    #     print "Found a loser, the multiple was: ", random_multiple
+    #     print "Lower bust to beat", lower_bust
+    #     print 'Higher profit rate to beat', higher_profit
+    #     print "Bust rate:", (multiple_busts / multiple_sample_sizes) * 100.0
+    #     print "Profit rate:", (multiple_profits / multiple_sample_sizes) * 100.0
+    #     print '##################################'
+
+"""
