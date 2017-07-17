@@ -3,6 +3,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import time
 
+
+simple_profits = 0.0
+doubler_profits = 0.0
+
 simple_busts = 0.0
 doubler_busts = 0.0
 
@@ -13,18 +17,17 @@ lower_bust = 31.235
 
 higher_profit = 63.208
 
-sample_size = 1000
-
-starting_funds = 10000
-wager_size = 100
-wager_count = 100
+sample_size = 1000 # Constant
+starting_funds = 10000 # Constant
 
 
-simple_profits = 0.0
-doubler_profits = 0.0
+wager_size = 100 # Switch up
+wager_count = 1000 # Switch up
 
 da_busts = 0.0
 da_profits = 0.0
+da_sample_size = 100000
+ret = 0.0
 
 random_multiple = random.uniform(0.1, 10.0)
 
@@ -42,7 +45,19 @@ def rollDice():
         # print roll, 'roll was 51 - 99. You win! *Pretty lights flash* Play more!'
         return True
 
+def rollDiceFair():
+    roll = random.randint(1,100)
+
+    if roll <= 50:
+        # print roll, 'roll was 1-50, you lose. Play again!'
+        return False
+    elif roll > 50:
+        # print roll, 'roll was 51 - 99. You win! *Pretty lights flash* Play more!'
+        return True
+
+
 def dAlembert(funds, initial_wager, wager_count):
+    global ret
     global da_busts
     global da_profits
 
@@ -61,7 +76,7 @@ def dAlembert(funds, initial_wager, wager_count):
 
             # print 'current wage:', wager, 'value', value
 
-            if rollDice():
+            if rollDiceFair():
                 value += wager
                 # print 'We won, current value', value
                 previous_wager_amount = wager
@@ -81,7 +96,7 @@ def dAlembert(funds, initial_wager, wager_count):
 
             # print "Lost the last wager, current wager:", wager, 'value', value
 
-            if rollDice():
+            if rollDiceFair():
                 value += wager
                 # print "We won current value: ", value
                 previous_wager_amount = wager
@@ -98,7 +113,8 @@ def dAlembert(funds, initial_wager, wager_count):
 
     if value > funds:
         da_profits += 1
-
+    # print value
+    ret += value
 
 
 def simpleBetter(funds, initial_wager, wager_count, color):
@@ -288,38 +304,89 @@ broke_count = 0
 
 dAlembert(starting_funds, wager_size, wager_count)
 
-"""
-x = 0
 
 while True:
-    multiple_busts = 0.0
-    multiple_profits = 0.0
+    # wager_size = 100  # Switch up
+    # wager_count = 1000  # Switch up
+    wager_size = random.uniform(1.0,1000.0)
+    wager_count = random.uniform(10, 10000)
 
-    multiple_sample_sizes = 100000
-    current_sample = 1
+    da_busts = 0.0
+    da_profits = 0.0
+    da_sample_size = 10000
+    ret = 0.0
+    counter = 1
 
-    random_multiple = random.uniform(0.1, 10.0)
+    while counter <= da_sample_size:
+        dAlembert(starting_funds, wager_size, wager_count)
+        counter += 1
 
-    while current_sample <= multiple_sample_sizes:
-        multipleBetter(starting_funds, wager_size, wager_count)
-        current_sample += 1
+    roi = ret - (da_sample_size * starting_funds)
+    total_invested = da_sample_size * starting_funds
+    percent_roi = (roi/total_invested) * 100.0
 
-    if ((multiple_busts/multiple_sample_sizes) * 100.0 < lower_bust) and \
-        ((multiple_profits/multiple_sample_sizes) * 100.0 > higher_profit):
-        print '##################################'
-        print "Found a winner, the multiple was: ", random_multiple
-        print "Lower bust to beat",lower_bust
-        print 'Higher profit rate to beat', higher_profit
-        print "Bust rate:",(multiple_busts/multiple_sample_sizes)*100.0
-        print "Profit rate:",(multiple_profits/multiple_sample_sizes) * 100.0
-        print '##################################'
-    # else:
-    #     print '##################################'
-    #     print "Found a loser, the multiple was: ", random_multiple
-    #     print "Lower bust to beat", lower_bust
-    #     print 'Higher profit rate to beat', higher_profit
-    #     print "Bust rate:", (multiple_busts / multiple_sample_sizes) * 100.0
-    #     print "Profit rate:", (multiple_profits / multiple_sample_sizes) * 100.0
-    #     print '##################################'
+    wager_size_percent = (wager_size/starting_funds) * 100.0
 
-"""
+    if percent_roi > 1:
+        print '______________________________________'
+        print "Total invested: ", da_sample_size * starting_funds
+        print "Total Return:", ret
+        print "ROI", ret - (da_sample_size * starting_funds)
+        print "Bust Rate:", (da_busts/da_sample_size) * 100.0
+        print "Profit Rate:", (da_profits/da_sample_size) * 100.0
+        print "Wager Size:", wager_size
+        print "Wager Count:", wager_count
+        print "Wager size percentage:", wager_size_percent
+
+        saveFile = open('monte-carlo-liberal.csv','a')
+        saveLine = '\n' + str(percent_roi) + ',' + str(wager_size_percent) + ',' + str(wager_count) + ',g'
+        saveFile.write(saveLine)
+        saveFile.close()
+
+    elif percent_roi < -1:
+        print '______________________________________'
+        print "Total invested: ", da_sample_size * starting_funds
+        print "Total Return:", ret
+        print "ROI", ret - (da_sample_size * starting_funds)
+        print "Bust Rate:", (da_busts / da_sample_size) * 100.0
+        print "Profit Rate:", (da_profits / da_sample_size) * 100.0
+        print "Wager Size:", wager_size
+        print "Wager Count:", wager_count
+        print "Wager size percentage:", wager_size_percent
+
+        saveFile = open('monte-carlo-liberal.csv', 'a')
+        saveLine = "\n" + str(percent_roi) + "," + str(wager_size_percent) + "," + str(wager_count) + ',r'
+        saveFile.write(saveLine)
+        saveFile.close()
+
+# while True:
+#     multiple_busts = 0.0
+#     multiple_profits = 0.0
+#
+#     multiple_sample_sizes = 100000
+#     current_sample = 1
+#
+#     random_multiple = random.uniform(0.1, 10.0)
+#
+#     while current_sample <= multiple_sample_sizes:
+#         multipleBetter(starting_funds, wager_size, wager_count)
+#         current_sample += 1
+#
+#     if ((multiple_busts/multiple_sample_sizes) * 100.0 < lower_bust) and \
+#         ((multiple_profits/multiple_sample_sizes) * 100.0 > higher_profit):
+#         print '##################################'
+#         print "Found a winner, the multiple was: ", random_multiple
+#         print "Lower bust to beat",lower_bust
+#         print 'Higher profit rate to beat', higher_profit
+#         print "Bust rate:",(multiple_busts/multiple_sample_sizes)*100.0
+#         print "Profit rate:",(multiple_profits/multiple_sample_sizes) * 100.0
+#         print '##################################'
+#     # else:
+#     #     print '##################################'
+#     #     print "Found a loser, the multiple was: ", random_multiple
+#     #     print "Lower bust to beat", lower_bust
+#     #     print 'Higher profit rate to beat', higher_profit
+#     #     print "Bust rate:", (multiple_busts / multiple_sample_sizes) * 100.0
+#     #     print "Profit rate:", (multiple_profits / multiple_sample_sizes) * 100.0
+#     #     print '##################################'
+#
